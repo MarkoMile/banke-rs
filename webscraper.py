@@ -27,7 +27,7 @@ def get_excel_urls(base_url):
     else:
         print(f"Failed to retrieve content from {base_url}")
 
-def download_file(url, download_path):
+def download_file(url, download_path='sheets/'):
     local_filename = url.split('/')[-1]
     local_filepath = os.path.join(download_path, local_filename)
 

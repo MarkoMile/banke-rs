@@ -1,5 +1,6 @@
-from parser import *
+from excel_parser import *
 from webscraper import *
+from data_anal import *
 
 # BU 31-12-2023 , 22
 # BS 31-12-2022 , 22 , 21
@@ -11,22 +12,17 @@ table_url = 'https://nbs.rs/static/nbs_site/gen/cirilica/50/vl_strukt/50b5.htm'
 #privremeno hard-coded
 sheets_folder = 'sheets/'
 
-links_dictionary = get_excel_urls(table_url)
+# links_dictionary = get_excel_urls(table_url)
     
 #test download_file function
-for name,link in links_dictionary.items():
-    download_file(link, sheets_folder)
+# for name,link in links_dictionary.items():
+#     download_file(link, sheets_folder)
 
+bank_data = parse_sheet_excel(sheets_folder)
 
-assert os.path.exists(sheets_folder), "sheets_folder does not exist"
-sheet_files = os.listdir(sheets_folder)
+# print(bank_data['Unicredit Bank Srbija A.D.- Beograd'])
 
-
-bank_data = dict()
-
-for sheet_path in sheet_files:
-    with open(sheets_folder+sheet_path, 'rb') as file_pointer:
-        bank_name, parsed_df = parse_sheet_excel(file_pointer)
-        bank_data[bank_name] = parsed_df
-
-print(bank_data)
+agg_frame = Agg_frame()
+agg_frame.aggregate_bilans(bank_data)
+# agg_frame.print_dataframe()
+agg_frame.output_file('test_sheet.xlsx')
