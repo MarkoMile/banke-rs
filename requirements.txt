@@ -19,3 +19,5 @@ tzdata==2024.1
 xlrd==2.0.1
     # via pandas
 openpyxl==3.1.5
+
+scikit-learn==1.5.1

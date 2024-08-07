@@ -1,5 +1,8 @@
 import pandas as pd
 import math
+from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+import numpy as np
 
 
 class Agg_frame():
@@ -50,8 +53,11 @@ class Agg_frame():
     ]
     dataframe = None
 
-    def __init__(self) -> None:
-        self.dataframe = pd.DataFrame(columns=self.dataframe_columns)
+    def __init__(self, filename=None) -> None:
+        if not filename:
+            self.dataframe = pd.DataFrame(columns=self.dataframe_columns)
+        else:
+            self.dataframe= pd.read_excel(filename)
         # self.dataframe
 
     def aggregate_bilans(self, bank_data):
@@ -174,7 +180,7 @@ class Agg_frame():
                                                                'Depoziti i ostale finansijske obaveze prema drugim komitentima']
         self.dataframe['Koeficijent likvidnosti'] = (self.dataframe['Gotovina i sredstva kod centralne banke  '] / \
                                                      self.dataframe['UKUPNO AKTIVA']) * 100
-        self.dataframe['Neto kamatna marža'] = self.dataframe['Neto prihod po osnovu kamata'] / interest_bearing_assets
+        self.dataframe['Neto kamatna marža'] = (self.dataframe['Neto prihod po osnovu kamata'] / interest_bearing_assets)/100
 
         self.dataframe['Marža po osnovu naknada i provizija'] = (self.dataframe[
                                                                      'Neto prihod po osnovu naknada i provizija'] / interest_bearing_assets) * 100
@@ -192,3 +198,55 @@ class Agg_frame():
 
         self.dataframe['Stopa obezvređenja'] = (self.dataframe[
                                                     'Neto rashod po osnovu obezvređenja finansijskih sredstava koja se ne vrednuju po fer vrednosti kroz bilans uspeha'] / interest_bearing_assets) * 100
+
+    def clustering(self):
+        df_2023 = self.dataframe[self.dataframe['Godina'] == 2023]
+        features = ['Udeo na tržištu', 'Odnos kredita prema depozitima', 'Koeficijent likvidnosti', 'Marža po osnovu naknada i provizija', 'Povrat na sopstveni kapital',
+                    'Stopa obezvređenja', 'Neto kamatna marža']
+        x = df_2023[features]
+
+        x_scaled = x.copy()
+        x_scaled['Odnos kredita prema depozitima'] = x['Odnos kredita prema depozitima'] * 100
+
+        best_eps = None
+        best_min_samples = None
+        best_labels = None
+        max_clusters = 0
+        cluster_counts = None
+
+        for eps in np.arange(15, 50, 1):
+            for min_samples in range(3, 12):
+                dbscan = DBSCAN(eps=eps, min_samples=min_samples).fit(x_scaled)
+                labels = dbscan.labels_
+
+                unique, counts = np.unique(labels, return_counts=True)
+                cluster_counts = dict(zip(unique, counts))
+                num_clusters = len([count for count in counts if count >= 5 and count != -1])
+
+                if num_clusters > max_clusters:
+                    max_clusters = num_clusters
+                    best_eps = eps
+                    best_min_samples = min_samples
+                    best_labels = labels
+
+        if best_labels is not None:
+            print(f"Best eps: {best_eps}, Best min_samples: {best_min_samples}")
+            print("Cluster labels:", best_labels)
+            unique, counts = np.unique(best_labels, return_counts=True)
+            cluster_counts = dict(zip(unique, counts))
+            print("Cluster sizes:", cluster_counts)
+
+            # Add cluster labels to the dataframe using .loc to avoid SettingWithCopyWarning
+            df_2023.loc[:, 'cluster'] = best_labels
+
+            # Print the clusters
+            for cluster_num in sorted(df_2023['cluster'].unique()):
+                if cluster_num != -1:
+                    print(f"Cluster {cluster_num}:")
+                    cluster_members = df_2023[df_2023['cluster'] == cluster_num]['Banka']
+                    print(cluster_members.tolist())
+
+            # Update the main dataframe with cluster labels
+            self.dataframe.loc[self.dataframe['Godina'] == 2023, 'cluster'] = df_2023['cluster']
+        else:
+            print("No suitable clustering found.")
