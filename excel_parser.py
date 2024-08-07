@@ -13,12 +13,15 @@ def parse_sheet_excel(sheets_folder='sheets/'):
 
     for sheet_path in sheet_files:
         with open(sheets_folder+sheet_path, 'rb') as file_pointer:
+            sheetname = 'BS'+' '+'31.12.'+'2023'    #placeholder sheetname for getting bank name
+            df = pd.read_excel(file_pointer,sheet_name=sheetname)
+            bank_name = str(df.columns[0])
+
             for tip_bilansa in ['BS','BU']:
                 for godina in range(2021,2024):
                     sheetname = tip_bilansa+' '+'31.12.'+str(godina)
                     # reading the excel file to extract bank_name
                     df = pd.read_excel(file_pointer,sheet_name=sheetname)
-                    bank_name = str(df.columns[0])
 
                     # header set to 5 to skip first rows containing bank name, date and other data
                     df = pd.read_excel(file_pointer, header=5,sheet_name=sheetname)

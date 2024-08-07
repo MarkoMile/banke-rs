@@ -1,4 +1,5 @@
 import pandas as pd
+import math
 
 
 class Agg_frame():
@@ -131,12 +132,24 @@ class Agg_frame():
 
                         df_bs.loc[len(df_bs)] = row
 
-        # Merge DataFrames on 'Godina' and 'Banka'
-        self.dataframe = pd.merge(df_bu, df_bs, on=['Godina', 'Banka'], how='outer', suffixes=('_bu', '_bs'))
+        
+        # for every 2 years in df_bs, calculate average of all values
+        # Sort by 'Banka' and 'Godina'
+        df_bs = df_bs.sort_values(by=['Banka', 'Godina'])
 
-        # Drop duplicate columns if any
-        # BUG: removes 'Promene fer vrednosti stavki koje su predmet zaštite od rizika'
-        # self.dataframe = self.dataframe.loc[:, ~self.dataframe.columns.duplicated()]
+        # Calculate rolling average for every 2 years
+        df_bs_avg = df_bs.groupby('Banka',as_index=False).rolling(2).mean().reset_index(drop=True)
+
+        # # Drop the first year for each bank
+        df_bs_avg = df_bs_avg.groupby('Banka',as_index=False).apply(lambda x: x.iloc[1:]).reset_index(drop=True)
+
+
+        #perform ceiling operation on all values in 'Godina' column
+        df_bs_avg['Godina'] = df_bs_avg['Godina'].apply(lambda x: math.ceil(x))
+
+
+        # Merge DataFrames on 'Godina' and 'Banka'
+        self.dataframe = pd.merge(df_bu, df_bs_avg, on=['Godina', 'Banka'], how='outer', suffixes=('_bu', '_bs'))
 
     def print_dataframe(self):
         print(self.dataframe)
