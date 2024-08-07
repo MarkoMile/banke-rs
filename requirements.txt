@@ -18,3 +18,4 @@ tzdata==2024.1
     # via pandas
 xlrd==2.0.1
     # via pandas
+openpyxl==3.1.5
