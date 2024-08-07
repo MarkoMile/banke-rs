@@ -4,12 +4,6 @@ import os
 # BU 31-12-2023 , 22
 # BS 31-12-2022 , 22 , 21
 
-#privremeno hard-coded
-sheets_folder = 'sheets/'
-assert os.path.exists(sheets_folder), "sheets_folder does not exist"
-
-sheet_files = os.listdir(sheets_folder)
-
 def parse_sheet_excel(file_pointer):
     # reading the excel file to extract bank_name
     df = pd.read_excel(file_pointer)
@@ -27,12 +21,3 @@ def parse_sheet_excel(file_pointer):
     df.iloc[:,2] = df.iloc[:,2] * 1000
 
     return bank_name,df
-
-bank_data = dict()
-
-for sheet_path in sheet_files:
-    with open(sheets_folder+sheet_path, 'rb') as file_pointer:
-        bank_name, parsed_df = parse_sheet_excel(file_pointer)
-        bank_data[bank_name] = parsed_df
-
-print(bank_data)

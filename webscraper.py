@@ -1,11 +1,6 @@
 import requests
 import pandas as pd
-import re
 import os
-
-# this url contains a table of bank names, along with links to their corresponding excel files
-# NOTE: we need to check if this is a permanent url or if they change it every year/quarter
-table_url = 'https://nbs.rs/static/nbs_site/gen/cirilica/50/vl_strukt/50b5.htm'
 
 # function that returns a dictionary of bank names and their corresponding excel file urls
 def get_excel_urls(base_url):
@@ -57,9 +52,3 @@ def download_file(url, download_path):
         print(f"Failed to retrieve content from {url}")
 
     print(f"Downloaded: {local_filename}")
-
-links_dictionary = get_excel_urls(table_url)
-    
-#test download_file function
-for name,link in links_dictionary.items():
-    download_file(link, 'sheets/')
