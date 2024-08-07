@@ -24,5 +24,6 @@ bank_data = parse_sheet_excel(sheets_folder)
 
 agg_frame = Agg_frame()
 agg_frame.aggregate_bilans(bank_data)
+agg_frame.add_indicators()
 # agg_frame.print_dataframe()
 agg_frame.output_file('test_sheet.xlsx')

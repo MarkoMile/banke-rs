@@ -132,21 +132,18 @@ class Agg_frame():
 
                         df_bs.loc[len(df_bs)] = row
 
-        
         # for every 2 years in df_bs, calculate average of all values
         # Sort by 'Banka' and 'Godina'
         df_bs = df_bs.sort_values(by=['Banka', 'Godina'])
 
         # Calculate rolling average for every 2 years
-        df_bs_avg = df_bs.groupby('Banka',as_index=False).rolling(2).mean().reset_index(drop=True)
+        df_bs_avg = df_bs.groupby('Banka', as_index=False).rolling(2).mean().reset_index(drop=True)
 
         # # Drop the first year for each bank
-        df_bs_avg = df_bs_avg.groupby('Banka',as_index=False).apply(lambda x: x.iloc[1:]).reset_index(drop=True)
+        df_bs_avg = df_bs_avg.groupby('Banka', as_index=False).apply(lambda x: x.iloc[1:]).reset_index(drop=True)
 
-
-        #perform ceiling operation on all values in 'Godina' column
+        # perform ceiling operation on all values in 'Godina' column
         df_bs_avg['Godina'] = df_bs_avg['Godina'].apply(lambda x: math.ceil(x))
-
 
         # Merge DataFrames on 'Godina' and 'Banka'
         self.dataframe = pd.merge(df_bu, df_bs_avg, on=['Godina', 'Banka'], how='outer', suffixes=('_bu', '_bs'))
@@ -158,18 +155,40 @@ class Agg_frame():
         self.dataframe.to_excel(filepath)
 
     def add_indicators(self):
-        yearly_total = self.dataframe.groupby('Year')['UKUPNO AKTIVA'].transform('sum')
+        yearly_total = self.dataframe.groupby('Godina')['UKUPNO AKTIVA'].transform('sum')
+
+        interest_bearing_assets = self.dataframe['UKUPNO AKTIVA'] - self.dataframe['Nematerijalna imovina'] - \
+                                  self.dataframe[
+                                      'Nekretnine, postrojenja i oprema'] - self.dataframe['Investicione nekretnine'] - \
+                                  self.dataframe[
+                                      'Ostala sredstva']
+
+        interest_bearing_liabilities = self.dataframe['UKUPNO OBAVEZE'] - self.dataframe[
+            'Obaveze po osnovu sredstava namenjenih prodaji i sredstva poslovanja koje se obustavlјa'] - self.dataframe[
+                                           'Tekuće poreske obaveze'] - self.dataframe['Odložene poreske obaveze']
+
         self.dataframe['Udeo na tržištu'] = (self.dataframe['UKUPNO AKTIVA'] / yearly_total) * 100
+
         self.dataframe['Odnos kredita prema depozitima'] = self.dataframe['Krediti i potraživanja od komitenata'] / \
                                                            self.dataframe[
                                                                'Depoziti i ostale finansijske obaveze prema drugim komitentima']
-        self.dataframe['Koeficijent likvidnosti'] = self.dataframe['Gotovina i sredstva kod centralne banke'] / \
-                                                    self.dataframe['UKUPNO AKTIVA']
-        self.dataframe['Neto kamatna marža'] = self.dataframe['Neto prihodi po osnovu kamata'] / (
-                    self.dataframe['UKUPNO AKTIVA'] - self.dataframe['Nematerijalna imovina'] - self.dataframe[
-                'Nekretnine, postrojenja i oprema'] - self.dataframe['Investicione nekretnine'] - self.dataframe[
-                        'Ostala sredstva'])
-        self.dataframe['Marža po osnovu naknada i provizija'] = self.dataframe['Neto prihodi po osnovu naknada i provizija'] / (
-                self.dataframe['UKUPNO AKTIVA'] - self.dataframe['Nematerijalna imovina'] - self.dataframe[
-            'Nekretnine, postrojenja i oprema'] - self.dataframe['Investicione nekretnine'] - self.dataframe[
-                    'Ostala sredstva'])
+        self.dataframe['Koeficijent likvidnosti'] = (self.dataframe['Gotovina i sredstva kod centralne banke  '] / \
+                                                     self.dataframe['UKUPNO AKTIVA']) * 100
+        self.dataframe['Neto kamatna marža'] = self.dataframe['Neto prihod po osnovu kamata'] / interest_bearing_assets
+
+        self.dataframe['Marža po osnovu naknada i provizija'] = (self.dataframe[
+                                                                     'Neto prihod po osnovu naknada i provizija'] / interest_bearing_assets) * 100
+        self.dataframe['Prosečna aktivna kamatna stopa'] = (self.dataframe[
+                                                                'Prihodi od kamata'] / interest_bearing_assets) * 100
+
+        self.dataframe['Prosečna pasivna kamatna stopa'] = (self.dataframe[
+                                                                'Rashodi od kamata'] / interest_bearing_liabilities) * 100
+
+        self.dataframe['Povrat na sopstveni kapital'] = (self.dataframe['DOBITAK PRE OPOREZIVANJA'] / self.dataframe[
+            'UKUPNO KAPITAL']) * 100
+
+        self.dataframe['Koeficijent ulaganja u hartije od vrednosti'] = (self.dataframe['Hartije od vrednosti'] / \
+                                                                         self.dataframe['UKUPNO AKTIVA']) * 100
+
+        self.dataframe['Stopa obezvređenja'] = (self.dataframe[
+                                                    'Neto rashod po osnovu obezvređenja finansijskih sredstava koja se ne vrednuju po fer vrednosti kroz bilans uspeha'] / interest_bearing_assets) * 100
