@@ -18,11 +18,13 @@ sheets_folder = 'sheets/'
 # for name,link in links_dictionary.items():
 #     download_file(link, sheets_folder)
 
-bank_data = parse_sheet_excel(sheets_folder)
+#bank_data = parse_sheet_excel(sheets_folder)
 
 # print(bank_data['Unicredit Bank Srbija A.D.- Beograd'])
 
-agg_frame = Agg_frame()
-agg_frame.aggregate_bilans(bank_data)
+agg_frame = Agg_frame('test_sheet.xlsx')
+#agg_frame.aggregate_bilans(bank_data)
+#agg_frame.add_indicators()
+agg_frame.clustering()
 # agg_frame.print_dataframe()
 agg_frame.output_file('test_sheet.xlsx')
