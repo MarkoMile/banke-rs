@@ -184,7 +184,7 @@ class Agg_frame():
         self.dataframe['Koeficijent likvidnosti'] = (self.dataframe['Gotovina i sredstva kod centralne banke  '] / \
                                                      self.dataframe['UKUPNO AKTIVA']) * 100
         self.dataframe['Neto kamatna marža'] = (self.dataframe[
-                                                    'Neto prihod po osnovu kamata'] / interest_bearing_assets) / 100
+                                                    'Neto prihod po osnovu kamata'] / interest_bearing_assets) * 100
 
         self.dataframe['Marža po osnovu naknada i provizija'] = (self.dataframe[
                                                                      'Neto prihod po osnovu naknada i provizija'] / interest_bearing_assets) * 100

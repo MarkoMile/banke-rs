@@ -76,6 +76,3 @@ tzdata==2024.1
     # via pandas
 urllib3==2.2.2
     # via requests
-xlrd==2.0.1
-    # via pandas
-openpyxl==3.1.5
