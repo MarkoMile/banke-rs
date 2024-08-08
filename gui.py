@@ -237,8 +237,10 @@ bank_box_frames = {}
 bank_market_charts = {}
 bank_choices = {}
 bank_choice_buttons= {}
-bank_dataframes = {}
+bank_clustered_dataframes = {}
 bank_clusters = {}
+bank_dataframes = {}
+
 for label,bank_frame in selected_bank_frames.items():
     bank_choice_frames[label] = ctk.CTkFrame(bank_frame)
     bank_chart_frames[label] = ctk.CTkFrame(bank_frame)
@@ -256,14 +258,21 @@ for label,bank_frame in selected_bank_frames.items():
 
     # get cluster of the bank by reading the dataframe in 2023
     bank_clusters[label] = agg_frame.dataframe[agg_frame.dataframe['Godina'] == 2023][agg_frame.dataframe['Banka'] == label]['cluster'].values[0]
-    bank_dataframes[label] = agg_frame.dataframe[agg_frame.dataframe['cluster'] == bank_clusters[label]]
-    bank_dataframes[label]['Ticker'] = bank_dataframes[label]['Banka'].map(tickers)
+    bank_clustered_dataframes[label] = agg_frame.dataframe[agg_frame.dataframe['cluster'] == bank_clusters[label]]
+    bank_clustered_dataframes[label]['Ticker'] = bank_clustered_dataframes[label]['Banka'].map(tickers)
     # NOTE: comment this out when debugging for better performance
     # Add content to 'chart' frame
-    bank_market_charts[label] = create_grouped_barplot(bank_dataframes[label], "Ticker","UKUPNO AKTIVA","Godina", f"{bank_clusters[label]} cluster comparison")
+    bank_market_charts[label] = create_grouped_barplot(bank_clustered_dataframes[label], "Ticker","UKUPNO AKTIVA","Godina", f"{bank_clusters[label]} cluster comparison")
     canvas = FigureCanvasTkAgg(bank_market_charts[label], master=bank_chart_frames[label])
     canvas.draw()
     canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+
+    bank_dataframes[label] = agg_frame.dataframe[agg_frame.dataframe['Godina'] == 2023]
+    # rank this bank by UKUPNO AKTIVA
+    bank_dataframes[label]['rang'] = bank_dataframes[label]['UKUPNO AKTIVA'].rank(ascending=False)
+
+    BOX_LABELS = ['RANG PO AKTIVI','UKUPNA AKTIVA', 'NETO KAMATNA MARŽA','POVRAĆAJ NA SOPSTVENI KAPITAL', 'KOEFICIJENT LIKVIDNOSTI', 'STOPA OBEZVREĐENJA']
+    BOX_DATA = [bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['rang'].values[0],bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['UKUPNO AKTIVA'].values[0],round(bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['Neto kamatna marža'].values[0]*100,2),round(bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['Povrat na sopstveni kapital'].values[0],2),round(bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['Koeficijent likvidnosti'].values[0],2),round(bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['Stopa obezvređenja'].values[0],2)]
 
     # Add 6 boxes with labels and data to 'data' frame
     for i in range(3):
@@ -271,10 +280,10 @@ for label,bank_frame in selected_bank_frames.items():
             bank_box_frames[label] = ctk.CTkFrame(bank_data_frames[label])
             bank_box_frames[label].grid(row=i, column=j, padx=10, pady=10, sticky="nsew")
             
-            box_text = ctk.CTkLabel(bank_box_frames[label], text=f"Label {i*2 + j + 1}", font=("Arial", 14))
+            box_text = ctk.CTkLabel(bank_box_frames[label], text=BOX_LABELS[i*2 + j], font=("Arial", 24))
             box_text.pack(pady=5)
             
-            data_content = ctk.CTkLabel(bank_box_frames[label], text=f"Data {i*2 + j + 1}", font=("Arial", 12))
+            data_content = ctk.CTkLabel(bank_box_frames[label], text=str(BOX_DATA[i*2 + j]) + ('%' if (i*2 + j) >=2 else ''), font=("Arial", 30))
             data_content.pack(pady=5)
 
     # Configure the bank_data_frames[label] to expand and fill the available space
