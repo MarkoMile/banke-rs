@@ -117,6 +117,48 @@ def on_hover(event):
             patch.set_alpha(0.6)
         event.artist.patches[event.index].set_alpha(0.5)
 
+def on_radio_click(event, value, label):
+    global bank_market_charts
+    global bank_full_dataframes
+    global bank_clusters
+    global bank_canvases
+    global bank_chart_frames
+    if label in bank_canvases and bank_canvases[label].get_tk_widget().winfo_exists():
+        bank_canvases[label].get_tk_widget().pack_forget()
+    # on radio click, do different things based on value
+    if (value==0):
+        #change the data in the chart to show UKUPNO AKTIVA
+        print("change the data in the chart to show UKUPNO AKTIVA")
+        bank_market_charts[label].clear()
+        bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","UKUPNO AKTIVA","Godina", f"{bank_clusters[label]} cluster comparison")
+    elif (value==1):
+        #change the data in the chart to show NETO KAMATNA MARŽA
+        print("change the data in the chart to show NETO KAMATNA MARŽA")
+        bank_market_charts[label].clear()
+        bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Neto kamatna marža","Godina", f"{bank_clusters[label]} cluster comparison")
+    elif (value==2):
+        #change the data in the chart to show POVRAT NA SOPSTVENI KAPITAL
+        print("change the data in the chart to show POVRAT NA SOPSTVENI KAPITAL")
+        bank_market_charts[label].clear()
+        bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Povrat na sopstveni kapital","Godina", f"{bank_clusters[label]} cluster comparison")
+    elif (value==3):
+        #change the data in the chart to show Koeficijent likvidnosti
+        print("change the data in the chart to show Koeficijent likvidnosti")
+        bank_market_charts[label].clear()
+        bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Koeficijent likvidnosti","Godina", f"{bank_clusters[label]} cluster comparison")
+    elif (value==4):
+        #change the data in the chart to show Stopa obezvređenja
+        print("change the data in the chart to show Stopa obezvređenja")
+        bank_market_charts[label].clear()
+        bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Stopa obezvređenja","Godina", f"{bank_clusters[label]} cluster comparison")
+    elif (value==5):
+        #change the data in the chart to show Odnos kredita prema depozitima
+        print("change the data in the chart to show Odnos kredita prema depozitima")
+        bank_market_charts[label].clear()
+        bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Odnos kredita prema depozitima","Godina", f"{bank_clusters[label]} cluster comparison")
+    bank_canvases[label] = FigureCanvasTkAgg(bank_market_charts[label], master=bank_chart_frames[label])
+    bank_canvases[label].draw()
+    bank_canvases[label].get_tk_widget().pack(side="top", fill="both", expand=True)
 
 # Function to switch frames
 def show_frame(frame):
@@ -234,6 +276,7 @@ bank_choice_frames = {}
 bank_chart_frames = {}
 bank_data_frames = {}
 bank_box_frames = {}
+# make bank_market_charts global
 bank_market_charts = {}
 bank_choices = {}
 bank_choice_buttons= {}
@@ -241,6 +284,7 @@ bank_clustered_dataframes = {}
 bank_clusters = {}
 bank_dataframes = {}
 bank_full_dataframes = {}
+bank_canvases = {}
 
 for label,bank_frame in selected_bank_frames.items():
     bank_choice_frames[label] = ctk.CTkFrame(bank_frame)
@@ -269,9 +313,9 @@ for label,bank_frame in selected_bank_frames.items():
     # NOTE: comment this out when debugging for better performance
     # Add content to 'chart' frame
     bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","UKUPNO AKTIVA","Godina", f"{bank_clusters[label]} cluster comparison")
-    canvas = FigureCanvasTkAgg(bank_market_charts[label], master=bank_chart_frames[label])
-    canvas.draw()
-    canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+    bank_canvases[label] = FigureCanvasTkAgg(bank_market_charts[label], master=bank_chart_frames[label])
+    bank_canvases[label].draw()
+    bank_canvases[label].get_tk_widget().pack(side="top", fill="both", expand=True)
 
     bank_dataframes[label] = agg_frame.dataframe[agg_frame.dataframe['Godina'] == 2023]
     # rank this bank by UKUPNO AKTIVA
@@ -303,6 +347,8 @@ for label,bank_frame in selected_bank_frames.items():
     for i in range(6):
         bank_choice_buttons[label] = ctk.CTkRadioButton(bank_choice_frames[label], text=f"Choice {i+1}", variable=bank_choices[label], value=i)
         bank_choice_buttons[label].grid(row=i, column=0, padx=10, pady=10, sticky="w")
+        #add on_click event to radio buttons
+        bank_choice_buttons[label].bind("<Button-1>", lambda event, value=i, label=label: on_radio_click(event, value, label))
     # center the radio buttons vertically
     bank_choice_frames[label].grid_rowconfigure(6, weight=1)
 
