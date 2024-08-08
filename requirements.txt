@@ -4,20 +4,78 @@
 #
 #    pip-compile
 #
-numpy==2.0.1
-    # via pandas
-pandas==2.2.2
+certifi==2024.7.4
+    # via requests
+charset-normalizer==3.3.2
+    # via requests
+contourpy==1.2.1
+    # via matplotlib
+customtkinter==5.2.2
     # via -r requirements.in
+cycler==0.12.1
+    # via matplotlib
+darkdetect==0.8.0
+    # via customtkinter
+fonttools==4.53.1
+    # via matplotlib
+idna==3.7
+    # via requests
+joblib==1.4.2
+    # via scikit-learn
+kiwisolver==1.4.5
+    # via matplotlib
+matplotlib==3.8.4
+    # via
+    #   -r requirements.in
+    #   mplcursors
+    #   seaborn
+mplcursors==0.5.3
+    # via -r requirements.in
+numpy==2.0.1
+    # via
+    #   -r requirements.in
+    #   contourpy
+    #   matplotlib
+    #   pandas
+    #   scikit-learn
+    #   scipy
+    #   seaborn
+packaging==24.1
+    # via
+    #   customtkinter
+    #   matplotlib
+pandas==2.2.2
+    # via
+    #   -r requirements.in
+    #   seaborn
+pillow==10.4.0
+    # via matplotlib
+pyparsing==3.1.2
+    # via matplotlib
 python-dateutil==2.9.0.post0
-    # via pandas
+    # via
+    #   matplotlib
+    #   pandas
 pytz==2024.1
     # via pandas
+requests==2.32.3
+    # via -r requirements.in
+scikit-learn==1.5.1
+    # via -r requirements.in
+scipy==1.14.0
+    # via scikit-learn
+seaborn==0.13.2
+    # via -r requirements.in
 six==1.16.0
     # via python-dateutil
+squarify==0.4.4
+    # via -r requirements.in
+threadpoolctl==3.5.0
+    # via scikit-learn
 tzdata==2024.1
     # via pandas
+urllib3==2.2.2
+    # via requests
 xlrd==2.0.1
     # via pandas
 openpyxl==3.1.5
-
-scikit-learn==1.5.1
