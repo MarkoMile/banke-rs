@@ -240,6 +240,7 @@ bank_choice_buttons= {}
 bank_clustered_dataframes = {}
 bank_clusters = {}
 bank_dataframes = {}
+bank_full_dataframes = {}
 
 for label,bank_frame in selected_bank_frames.items():
     bank_choice_frames[label] = ctk.CTkFrame(bank_frame)
@@ -260,9 +261,14 @@ for label,bank_frame in selected_bank_frames.items():
     bank_clusters[label] = agg_frame.dataframe[agg_frame.dataframe['Godina'] == 2023][agg_frame.dataframe['Banka'] == label]['cluster'].values[0]
     bank_clustered_dataframes[label] = agg_frame.dataframe[agg_frame.dataframe['cluster'] == bank_clusters[label]]
     bank_clustered_dataframes[label]['Ticker'] = bank_clustered_dataframes[label]['Banka'].map(tickers)
+
+    #create new dataframe from agg_frame containing all banks that are in bank_clustered_dataframes[label]['Banka']
+    bank_full_dataframes[label] = agg_frame.dataframe[agg_frame.dataframe['Banka'].isin(bank_clustered_dataframes[label]['Banka'])]
+    bank_full_dataframes[label]['Ticker'] = bank_full_dataframes[label]['Banka'].map(tickers)
+
     # NOTE: comment this out when debugging for better performance
     # Add content to 'chart' frame
-    bank_market_charts[label] = create_grouped_barplot(bank_clustered_dataframes[label], "Ticker","UKUPNO AKTIVA","Godina", f"{bank_clusters[label]} cluster comparison")
+    bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","UKUPNO AKTIVA","Godina", f"{bank_clusters[label]} cluster comparison")
     canvas = FigureCanvasTkAgg(bank_market_charts[label], master=bank_chart_frames[label])
     canvas.draw()
     canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
