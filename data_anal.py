@@ -224,22 +224,16 @@ class Agg_frame():
         plt.show()
 
     def hierarchical_clustering(self):
-        df_2023 = self.dataframe[self.dataframe['Godina'] == 2023]
-        features = ['Udeo na tržištu','Marža po osnovu naknada i provizija',
+        df_2023 = self.dataframe[self.dataframe['Godina'] == 2023].copy()
+        features = ['Udeo na tržištu', 'Marža po osnovu naknada i provizija',
                     'Koeficijent ulaganja u hartije od vrednosti', 'Stopa obezvređenja',
-                    'Neto kamatna marža']
-        x = df_2023[features]
+                    'Neto kamatna marža', 'Povrat na sopstveni kapital']
 
-        # # Scale 'Odnos kredita prema depozitima' by 100
-        x_scaled = x.copy()
-        # x_scaled['Odnos kredita prema depozitima'] = x['Odnos kredita prema depozitima'] * 100
-
-        # Standard scale the features
         scaler = StandardScaler()
-        x_scaled = scaler.fit_transform(x_scaled)
+        x_scaled = scaler.fit_transform(df_2023[features])
 
         # Perform hierarchical clustering
-        num_clusters = 4  # Adjust this value based on your specific requirements
+        num_clusters = 5  # Adjust this value based on your specific requirements
         clustering_model = AgglomerativeClustering(n_clusters=num_clusters)
         labels = clustering_model.fit_predict(x_scaled)
 
@@ -254,7 +248,7 @@ class Agg_frame():
 
         # Update the main dataframe with cluster labels
         self.dataframe.loc[self.dataframe['Godina'] == 2023, 'cluster'] = df_2023['cluster']
-        print("--------------------------------------------------------")
+        print("------------------------------------------------------------")
 
     def kmeans(self):
         os.environ["LOKY_MAX_CPU_COUNT"] = "4"
@@ -306,12 +300,13 @@ class Agg_frame():
         pca = PCA(n_components=4)  # You can adjust the number of components
         principal_components = pca.fit_transform(x_scaled)
         pca_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2', 'PC3', 'PC4'])
+        # pca_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2', 'PC3'])
 
         print("Explained variance ratio of the principal components:")
         print(pca.explained_variance_ratio_)
 
         # Perform K-Means clustering on the principal components
-        num_clusters = 4  # Adjust this value based on your specific requirements
+        num_clusters = 5  # Adjust this value based on your specific requirements
         kmeans = KMeans(n_clusters=num_clusters, random_state=42)
         labels = kmeans.fit_predict(pca_df)
 
