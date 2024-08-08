@@ -1,8 +1,11 @@
 import pandas as pd
 import math
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN, AgglomerativeClustering, KMeans
 from sklearn.preprocessing import StandardScaler
-import numpy as np
+from sklearn.decomposition import PCA
+import os
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 class Agg_frame():
@@ -57,7 +60,7 @@ class Agg_frame():
         if not filename:
             self.dataframe = pd.DataFrame(columns=self.dataframe_columns)
         else:
-            self.dataframe= pd.read_excel(filename)
+            self.dataframe = pd.read_excel(filename)
         # self.dataframe
 
     def aggregate_bilans(self, bank_data):
@@ -180,7 +183,8 @@ class Agg_frame():
                                                                'Depoziti i ostale finansijske obaveze prema drugim komitentima']
         self.dataframe['Koeficijent likvidnosti'] = (self.dataframe['Gotovina i sredstva kod centralne banke  '] / \
                                                      self.dataframe['UKUPNO AKTIVA']) * 100
-        self.dataframe['Neto kamatna marža'] = (self.dataframe['Neto prihod po osnovu kamata'] / interest_bearing_assets)/100
+        self.dataframe['Neto kamatna marža'] = (self.dataframe[
+                                                    'Neto prihod po osnovu kamata'] / interest_bearing_assets) / 100
 
         self.dataframe['Marža po osnovu naknada i provizija'] = (self.dataframe[
                                                                      'Neto prihod po osnovu naknada i provizija'] / interest_bearing_assets) * 100
@@ -199,54 +203,132 @@ class Agg_frame():
         self.dataframe['Stopa obezvređenja'] = (self.dataframe[
                                                     'Neto rashod po osnovu obezvređenja finansijskih sredstava koja se ne vrednuju po fer vrednosti kroz bilans uspeha'] / interest_bearing_assets) * 100
 
-    def clustering(self):
+    def show_correlations(self):
         df_2023 = self.dataframe[self.dataframe['Godina'] == 2023]
-        features = ['Udeo na tržištu', 'Odnos kredita prema depozitima', 'Koeficijent likvidnosti', 'Marža po osnovu naknada i provizija', 'Povrat na sopstveni kapital',
-                    'Stopa obezvređenja', 'Neto kamatna marža']
+        features = ['Udeo na tržištu', 'Odnos kredita prema depozitima', 'Marža po osnovu naknada i provizija',
+                    'Prosečna aktivna kamatna stopa', 'Prosečna pasivna kamatna stopa',
+                    'Koeficijent ulaganja u hartije od vrednosti',
+                    'Koeficijent likvidnosti', 'Povrat na sopstveni kapital', 'Stopa obezvređenja',
+                    'Neto kamatna marža']
+
+        # Calculate the correlation matrix
+        corr_matrix = df_2023[features].corr()
+        print(corr_matrix)
+
+        # Plot the heatmap
+        plt.figure(figsize=(12, 10))
+        plt.tight_layout()
+        sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt='.2f', cbar=True, annot_kws={"size": 10},
+                    xticklabels=features, yticklabels=features)
+        plt.title('Correlation Matrix of Features')
+        plt.show()
+
+    def hierarchical_clustering(self):
+        df_2023 = self.dataframe[self.dataframe['Godina'] == 2023]
+        features = ['Udeo na tržištu','Marža po osnovu naknada i provizija',
+                    'Koeficijent ulaganja u hartije od vrednosti', 'Stopa obezvređenja',
+                    'Neto kamatna marža']
         x = df_2023[features]
 
+        # # Scale 'Odnos kredita prema depozitima' by 100
         x_scaled = x.copy()
-        x_scaled['Odnos kredita prema depozitima'] = x['Odnos kredita prema depozitima'] * 100
+        # x_scaled['Odnos kredita prema depozitima'] = x['Odnos kredita prema depozitima'] * 100
 
-        best_eps = None
-        best_min_samples = None
-        best_labels = None
-        max_clusters = 0
-        cluster_counts = None
+        # Standard scale the features
+        scaler = StandardScaler()
+        x_scaled = scaler.fit_transform(x_scaled)
 
-        for eps in np.arange(15, 50, 1):
-            for min_samples in range(3, 12):
-                dbscan = DBSCAN(eps=eps, min_samples=min_samples).fit(x_scaled)
-                labels = dbscan.labels_
+        # Perform hierarchical clustering
+        num_clusters = 4  # Adjust this value based on your specific requirements
+        clustering_model = AgglomerativeClustering(n_clusters=num_clusters)
+        labels = clustering_model.fit_predict(x_scaled)
 
-                unique, counts = np.unique(labels, return_counts=True)
-                cluster_counts = dict(zip(unique, counts))
-                num_clusters = len([count for count in counts if count >= 5 and count != -1])
+        # Add cluster labels to the dataframe using .loc to avoid SettingWithCopyWarning
+        df_2023.loc[:, 'cluster'] = labels
 
-                if num_clusters > max_clusters:
-                    max_clusters = num_clusters
-                    best_eps = eps
-                    best_min_samples = min_samples
-                    best_labels = labels
+        # Print the clusters
+        for cluster_num in sorted(df_2023['cluster'].unique()):
+            print(f"Cluster {cluster_num}:")
+            cluster_members = df_2023[df_2023['cluster'] == cluster_num]['Banka']
+            print(cluster_members.tolist())
 
-        if best_labels is not None:
-            print(f"Best eps: {best_eps}, Best min_samples: {best_min_samples}")
-            print("Cluster labels:", best_labels)
-            unique, counts = np.unique(best_labels, return_counts=True)
-            cluster_counts = dict(zip(unique, counts))
-            print("Cluster sizes:", cluster_counts)
+        # Update the main dataframe with cluster labels
+        self.dataframe.loc[self.dataframe['Godina'] == 2023, 'cluster'] = df_2023['cluster']
+        print("--------------------------------------------------------")
 
-            # Add cluster labels to the dataframe using .loc to avoid SettingWithCopyWarning
-            df_2023.loc[:, 'cluster'] = best_labels
+    def kmeans(self):
+        os.environ["LOKY_MAX_CPU_COUNT"] = "4"
+        df_2023 = self.dataframe[self.dataframe['Godina'] == 2023]
 
-            # Print the clusters
-            for cluster_num in sorted(df_2023['cluster'].unique()):
-                if cluster_num != -1:
-                    print(f"Cluster {cluster_num}:")
-                    cluster_members = df_2023[df_2023['cluster'] == cluster_num]['Banka']
-                    print(cluster_members.tolist())
+        features = ['Udeo na tržištu','Marža po osnovu naknada i provizija',
+                    'Koeficijent ulaganja u hartije od vrednosti', 'Stopa obezvređenja',
+                    'Neto kamatna marža']
+        x = df_2023[features]
 
-            # Update the main dataframe with cluster labels
-            self.dataframe.loc[self.dataframe['Godina'] == 2023, 'cluster'] = df_2023['cluster']
-        else:
-            print("No suitable clustering found.")
+        # Scale 'Odnos kredita prema depozitima' by 100
+        x_scaled = x.copy()
+
+        # Standard scale the features
+        scaler = StandardScaler()
+        x_scaled = scaler.fit_transform(x_scaled)
+
+        # Perform K-Means clustering
+        num_clusters = 5  # Adjust this value based on your specific requirements
+        kmeans = KMeans(n_clusters=num_clusters, random_state=42)
+        labels = kmeans.fit_predict(x_scaled)
+
+        # Add cluster labels to the dataframe using .loc to avoid SettingWithCopyWarning
+        df_2023.loc[:, 'cluster'] = labels
+
+        # Print the clusters
+        for cluster_num in sorted(df_2023['cluster'].unique()):
+            print(f"Cluster {cluster_num}:")
+            cluster_members = df_2023[df_2023['cluster'] == cluster_num]['Banka']
+            print(cluster_members.tolist())
+
+        # Update the main dataframe with cluster labels
+        self.dataframe.loc[self.dataframe['Godina'] == 2023, 'cluster'] = df_2023['cluster']
+        print("------------------------------------------------------------")
+
+    def perform_pca_and_cluster(self):
+        df_2023 = self.dataframe[self.dataframe['Godina'] == 2023]
+        features = ['Udeo na tržištu', 'Odnos kredita prema depozitima', 'Marža po osnovu naknada i provizija',
+                    'Prosečna aktivna kamatna stopa', 'Prosečna pasivna kamatna stopa',
+                    'Koeficijent ulaganja u hartije od vrednosti', 'Koeficijent likvidnosti',
+                    'Povrat na sopstveni kapital', 'Stopa obezvređenja', 'Neto kamatna marža']
+        x = df_2023[features]
+
+        # Scale the features
+        scaler = StandardScaler()
+        x_scaled = scaler.fit_transform(x)
+
+        # Perform PCA
+        pca = PCA(n_components=4)  # You can adjust the number of components
+        principal_components = pca.fit_transform(x_scaled)
+        pca_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2', 'PC3', 'PC4'])
+
+        print("Explained variance ratio of the principal components:")
+        print(pca.explained_variance_ratio_)
+
+        # Perform K-Means clustering on the principal components
+        num_clusters = 4  # Adjust this value based on your specific requirements
+        kmeans = KMeans(n_clusters=num_clusters, random_state=42)
+        labels = kmeans.fit_predict(pca_df)
+
+        # Add cluster labels to the dataframe using .loc to avoid SettingWithCopyWarning
+        df_2023.loc[:, 'cluster'] = labels
+
+        # Print the clusters
+        for cluster_num in sorted(df_2023['cluster'].unique()):
+            print(f"Cluster {cluster_num}:")
+            cluster_members = df_2023[df_2023['cluster'] == cluster_num]['Banka']
+            print(cluster_members.tolist())
+
+        # Update the main dataframe with cluster labels
+        self.dataframe.loc[self.dataframe['Godina'] == 2023, 'cluster'] = df_2023['cluster']
+    def output_file(self, filepath='output_sheet.xlsx'):
+        try:
+            self.dataframe.to_excel(filepath, index=False)
+            print(f"Data successfully written to {filepath}")
+        except PermissionError:
+            print(f"Permission denied: {filepath}. Ensure the file is not open or in use.")
