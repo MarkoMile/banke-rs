@@ -70,13 +70,6 @@ UKUPAN_KREDIT_2023 = agg_frame.dataframe[agg_frame.dataframe['Godina'] == 2023][
 UKUPAN_KREDIT_2022 = agg_frame.dataframe[agg_frame.dataframe['Godina'] == 2022]['Krediti i potraživanja od komitenata'].sum()
 RAST_KREDITA = round((UKUPAN_KREDIT_2023 / UKUPAN_KREDIT_2022-1)*100,2)
 
-# Sample data
-data = pd.DataFrame({
-    'Banks': ['A', 'B', 'C', 'D','A', 'B', 'C', 'D'],
-    'Year': [2021, 2022, 2021, 2022,2022, 2021, 2022, 2021],
-    'MarketValue': [1000, 1500, 2000,3000, 500, 1000, 1500, 2000],
-})
-
 # Filter godina 2023 and show only column 'Udeo na tržištu'
 data_treemap = agg_frame.dataframe[agg_frame.dataframe['Godina']==2023][['Banka','Udeo na tržištu']].reset_index(drop=True)
 data_treemap['Ticker'] = data_treemap['Banka'].map(tickers)
@@ -212,7 +205,7 @@ for i in range(3):
         label = ctk.CTkLabel(box_frame, text=BOX_LABELS[i*2 + j], font=("Arial", 24))
         label.pack(pady=5)
         
-        data_content = ctk.CTkLabel(box_frame, text= str(BOX_DATA[i*2 + j]) + '%', font=("Arial", 30))
+        data_content = ctk.CTkLabel(box_frame, text= str(BOX_DATA[i*2 + j]) + ('%' if ((i*2 + j)%2) else '') , font=("Arial", 30))
         data_content.pack(pady=5)
 
 # Configure the data_frame to expand and fill the available space
@@ -244,6 +237,8 @@ bank_box_frames = {}
 bank_market_charts = {}
 bank_choices = {}
 bank_choice_buttons= {}
+bank_dataframes = {}
+bank_clusters = {}
 for label,bank_frame in selected_bank_frames.items():
     bank_choice_frames[label] = ctk.CTkFrame(bank_frame)
     bank_chart_frames[label] = ctk.CTkFrame(bank_frame)
@@ -259,12 +254,16 @@ for label,bank_frame in selected_bank_frames.items():
     bank_frame.grid_columnconfigure(1, weight=9,uniform='Silent_Creme')
     bank_frame.grid_columnconfigure(2, weight=9,uniform='Silent_Creme')
 
+    # get cluster of the bank by reading the dataframe in 2023
+    bank_clusters[label] = agg_frame.dataframe[agg_frame.dataframe['Godina'] == 2023][agg_frame.dataframe['Banka'] == label]['cluster'].values[0]
+    bank_dataframes[label] = agg_frame.dataframe[agg_frame.dataframe['cluster'] == bank_clusters[label]]
+    bank_dataframes[label]['Ticker'] = bank_dataframes[label]['Banka'].map(tickers)
     # NOTE: comment this out when debugging for better performance
     # Add content to 'chart' frame
-    # bank_market_charts[label] = create_grouped_barplot(data, "Banks","MarketValue","Year", f"{label} Bank Market Value")
-    # canvas = FigureCanvasTkAgg(bank_market_charts[label], master=bank_chart_frames[label])
-    # canvas.draw()
-    # canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
+    bank_market_charts[label] = create_grouped_barplot(bank_dataframes[label], "Ticker","UKUPNO AKTIVA","Godina", f"{bank_clusters[label]} cluster comparison")
+    canvas = FigureCanvasTkAgg(bank_market_charts[label], master=bank_chart_frames[label])
+    canvas.draw()
+    canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
 
     # Add 6 boxes with labels and data to 'data' frame
     for i in range(3):
