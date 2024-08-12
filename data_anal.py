@@ -240,15 +240,15 @@ class Agg_frame():
         # Add cluster labels to the dataframe using .loc to avoid SettingWithCopyWarning
         df_2023.loc[:, 'cluster'] = labels
 
-        # Print the clusters
-        for cluster_num in sorted(df_2023['cluster'].unique()):
-            print(f"Cluster {cluster_num}:")
-            cluster_members = df_2023[df_2023['cluster'] == cluster_num]['Banka']
-            print(cluster_members.tolist())
+        # Debugging: Print the clusters
+        # for cluster_num in sorted(df_2023['cluster'].unique()):
+        #     print(f"Cluster {cluster_num}:")
+        #     cluster_members = df_2023[df_2023['cluster'] == cluster_num]['Banka']
+        #     print(cluster_members.tolist())
+        # print("------------------------------------------------------------")
 
         # Update the main dataframe with cluster labels
         self.dataframe.loc[self.dataframe['Godina'] == 2023, 'cluster'] = df_2023['cluster']
-        print("------------------------------------------------------------")
 
     def kmeans(self):
         os.environ["LOKY_MAX_CPU_COUNT"] = "4"
@@ -274,15 +274,15 @@ class Agg_frame():
         # Add cluster labels to the dataframe using .loc to avoid SettingWithCopyWarning
         df_2023.loc[:, 'cluster'] = labels
 
-        # Print the clusters
-        for cluster_num in sorted(df_2023['cluster'].unique()):
-            print(f"Cluster {cluster_num}:")
-            cluster_members = df_2023[df_2023['cluster'] == cluster_num]['Banka']
-            print(cluster_members.tolist())
+        # # Debugging: Print the clusters
+        # for cluster_num in sorted(df_2023['cluster'].unique()):
+        #     print(f"Cluster {cluster_num}:")
+        #     cluster_members = df_2023[df_2023['cluster'] == cluster_num]['Banka']
+        #     print(cluster_members.tolist())
+        # print("------------------------------------------------------------")
 
         # Update the main dataframe with cluster labels
         self.dataframe.loc[self.dataframe['Godina'] == 2023, 'cluster'] = df_2023['cluster']
-        print("------------------------------------------------------------")
 
     def perform_pca_and_cluster(self):
         df_2023 = self.dataframe[self.dataframe['Godina'] == 2023]
@@ -302,8 +302,9 @@ class Agg_frame():
         pca_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2', 'PC3', 'PC4'])
         # pca_df = pd.DataFrame(data=principal_components, columns=['PC1', 'PC2', 'PC3'])
 
-        print("Explained variance ratio of the principal components:")
-        print(pca.explained_variance_ratio_)
+        # Debugging: Print the explained variance ratio
+        # print("Explained variance ratio of the principal components:")
+        # print(pca.explained_variance_ratio_)
 
         # Perform K-Means clustering on the principal components
         num_clusters = 5  # Adjust this value based on your specific requirements
@@ -313,11 +314,11 @@ class Agg_frame():
         # Add cluster labels to the dataframe using .loc to avoid SettingWithCopyWarning
         df_2023.loc[:, 'cluster'] = labels
 
-        # Print the clusters
-        for cluster_num in sorted(df_2023['cluster'].unique()):
-            print(f"Cluster {cluster_num}:")
-            cluster_members = df_2023[df_2023['cluster'] == cluster_num]['Banka']
-            print(cluster_members.tolist())
+        # # Debugging: Print the clusters
+        # for cluster_num in sorted(df_2023['cluster'].unique()):
+        #     print(f"Cluster {cluster_num}:")
+        #     cluster_members = df_2023[df_2023['cluster'] == cluster_num]['Banka']
+        #     print(cluster_members.tolist())
 
         # Update the main dataframe with cluster labels
         self.dataframe.loc[self.dataframe['Godina'] == 2023, 'cluster'] = df_2023['cluster']
