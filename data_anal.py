@@ -162,6 +162,9 @@ class Agg_frame():
 
     def output_file(self, filepath):
         self.dataframe.to_excel(filepath)
+    
+    def load_file(self, filepath):
+        self.dataframe = pd.read_excel(filepath)
 
     def add_indicators(self):
         yearly_total = self.dataframe.groupby('Godina')['UKUPNO AKTIVA'].transform('sum')

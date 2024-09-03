@@ -91,23 +91,52 @@ def load_main_dashboard_data(agg_frame = None):
 
 
 #callback should be show_main_dashboard
-def load_sheets(sheets_folder='sheets/',callback=None):
-    # DOWNLOAD DATA -- commented out to save time when debugging
-    # download_data(sheets_folder, table_url)
+def load_sheets(sheets_folder='sheets/',sheet_path='dataframe.xlsx',callback=None,download=False,load=False,save=True):
 
-    bank_data = parse_sheet_excel(sheets_folder)
+    # Download data if folder doesn't exist or if the folder is empty [or if download is set to True]
+    if download or (not os.path.exists(sheets_folder) or not os.listdir(sheets_folder)):
+        download_data(sheets_folder, table_url)
 
-    agg_frame = Agg_frame('test_sheet.xlsx')
-    agg_frame.aggregate_bilans(bank_data)
+    if not load:
+        # Parse the excel files and aggregate the data
+        bank_data = parse_sheet_excel(sheets_folder)
 
-    agg_frame.add_indicators()
-    # agg_frame.show_correlations()
-    agg_frame.hierarchical_clustering()
-    agg_frame.kmeans()
-    agg_frame.perform_pca_and_cluster()
+        # If sheet_path is provided (and exists), filter the data for that sheet, else create new Agg_frame
+        agg_frame = Agg_frame(None if not(sheet_path and os.path.exists(sheet_path)) else sheet_path)
+        agg_frame.aggregate_bilans(bank_data)
 
-    # agg_frame.print_dataframe()
-    # agg_frame.output_file('test_sheet.xlsx')
+        agg_frame.add_indicators()
+        # agg_frame.show_correlations()
+        agg_frame.hierarchical_clustering()
+        agg_frame.kmeans()
+        agg_frame.perform_pca_and_cluster()
+        if save:
+            agg_frame.output_file(sheet_path)
+    else:
+        if os.path.exists(sheet_path):
+            try:
+                agg_frame = Agg_frame(sheet_path)
+                agg_frame.load_file(sheet_path)
+            except:
+                raise ValueError("Sheet path not provided correctly or file not found")
+                exit(1)
+        else:
+            print("Sheet path not provided correctly or file not found")
+            print("Defaulting to download and save mode...")
+            download_data(sheets_folder, table_url)
+            # Parse the excel files and aggregate the data
+            bank_data = parse_sheet_excel(sheets_folder)
+
+            # If sheet_path is provided (and exists), filter the data for that sheet, else create new Agg_frame
+            agg_frame = Agg_frame(None if not(sheet_path and os.path.exists(sheet_path)) else sheet_path)
+            agg_frame.aggregate_bilans(bank_data)
+
+            agg_frame.add_indicators()
+            # agg_frame.show_correlations()
+            agg_frame.hierarchical_clustering()
+            agg_frame.kmeans()
+            agg_frame.perform_pca_and_cluster()
+            agg_frame.output_file(sheet_path)
 
     if callback:
         data_treemap, display_data = load_main_dashboard_data(agg_frame)
@@ -412,14 +441,24 @@ selected_bank_frame.grid(row=0, column=0, sticky="nsew")
 #         bank_choice_frames[label].grid_rowconfigure(i, weight=1,uniform='Silent_Creme')
 
 # Schedule load_sheets to run after the main loop starts
-app.after(50, lambda: show_loading_frame(master=loading_frame))
+show_loading_frame(master=loading_frame)
 
-app.after(1000, lambda: load_sheets(
+load_sheets(
     sheets_folder,
     callback=lambda data_treemap, display_data: show_main_dashboard(
         master=entire_market_frame,
         treemap_data=data_treemap,
         market_data=display_data
-    )
-))
+    ),
+    save=False,
+    sheet_path='dataframe.xlsx',
+    download=False,
+    load=True
+)
+
+#NOTE:
+# try using threads to load the data and be able to update the app in parallel
+
+
 app.mainloop()
+
