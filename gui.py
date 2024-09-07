@@ -49,17 +49,17 @@ def download_data(sheets_folder='sheets/', table_url='https://nbs.rs/static/nbs_
     for name,link in links_dictionary.items():
         download_file(link, sheets_folder)
 
-def show_loading_frame(master = None):
-    # Add a temporary loading label until data is parsed and aggregated
-    loading_label = ctk.CTkLabel(master, text="Učitavanje podataka...", font=("Arial", 24))
-    loading_label.grid(row=1, column=0, pady=10, sticky="n")
+# def show_loading_frame(master = None):
+#     # Add a temporary loading label until data is parsed and aggregated
+#     loading_label = ctk.CTkLabel(master, text="Učitavanje podataka...", font=("Arial", 24))
+#     loading_label.grid(row=1, column=0, pady=10, sticky="n")
 
-    # Configure the master to expand and fill the available space
-    master.grid_rowconfigure(0, weight=1)
-    master.grid_rowconfigure(1, weight=1)
-    master.grid_columnconfigure(0, weight=1)
+#     # Configure the master to expand and fill the available space
+#     master.grid_rowconfigure(0, weight=1)
+#     master.grid_rowconfigure(1, weight=1)
+#     master.grid_columnconfigure(0, weight=1)
 
-    show_frame(master)
+#     show_frame(master)
 
 def load_main_dashboard_data(agg_frame = None):
     # DATA THAT WILL BE DISPLAYED ON MAIN DASHBOARD
@@ -89,9 +89,26 @@ def load_main_dashboard_data(agg_frame = None):
     
     return data_treemap,display_data
 
+def creat_agg_frame(sheet_path='dataframe.xlsx',bank_data=None):
+    # If sheet_path is provided (and exists), filter the data for that sheet, else create new Agg_frame
+    agg_frame = Agg_frame(None if not(sheet_path and os.path.exists(sheet_path)) else sheet_path)
+    agg_frame.aggregate_bilans(bank_data)
+
+    agg_frame.add_indicators()
+    # agg_frame.show_correlations()
+    agg_frame.hierarchical_clustering()
+    agg_frame.kmeans()
+    agg_frame.perform_pca_and_cluster()
+    agg_frame.dataframe.loc[:, 'Ticker'] = agg_frame.dataframe['Banka'].map(tickers)
+    #take cluster from rows with Godina==2023 and add it to the rows with Godina==2022 if the cell banka is the same
+    agg_frame.dataframe.loc[agg_frame.dataframe['Godina'] == 2022, 'cluster'] = agg_frame.dataframe.loc[agg_frame.dataframe['Godina'] == 2022, 'Banka'].map(agg_frame.dataframe.loc[agg_frame.dataframe['Godina'] == 2023].set_index('Banka')['cluster'])
+
+
+    # print(agg_frame.dataframe)
+    return agg_frame
 
 #callback should be show_main_dashboard
-def load_sheets(sheets_folder='sheets/',sheet_path='dataframe.xlsx',callback=None,download=False,load=False,save=True):
+def load_sheets(sheets_folder='sheets/',sheet_path='dataframe.xlsx',download=False,load=False,save=True):
 
     # Download data if folder doesn't exist or if the folder is empty [or if download is set to True]
     if download or (not os.path.exists(sheets_folder) or not os.listdir(sheets_folder)):
@@ -101,15 +118,7 @@ def load_sheets(sheets_folder='sheets/',sheet_path='dataframe.xlsx',callback=Non
         # Parse the excel files and aggregate the data
         bank_data = parse_sheet_excel(sheets_folder)
 
-        # If sheet_path is provided (and exists), filter the data for that sheet, else create new Agg_frame
-        agg_frame = Agg_frame(None if not(sheet_path and os.path.exists(sheet_path)) else sheet_path)
-        agg_frame.aggregate_bilans(bank_data)
-
-        agg_frame.add_indicators()
-        # agg_frame.show_correlations()
-        agg_frame.hierarchical_clustering()
-        agg_frame.kmeans()
-        agg_frame.perform_pca_and_cluster()
+        agg_frame = creat_agg_frame(sheet_path,bank_data)
         if save:
             agg_frame.output_file(sheet_path)
     else:
@@ -127,31 +136,34 @@ def load_sheets(sheets_folder='sheets/',sheet_path='dataframe.xlsx',callback=Non
             # Parse the excel files and aggregate the data
             bank_data = parse_sheet_excel(sheets_folder)
 
-            # If sheet_path is provided (and exists), filter the data for that sheet, else create new Agg_frame
-            agg_frame = Agg_frame(None if not(sheet_path and os.path.exists(sheet_path)) else sheet_path)
-            agg_frame.aggregate_bilans(bank_data)
-
-            agg_frame.add_indicators()
-            # agg_frame.show_correlations()
-            agg_frame.hierarchical_clustering()
-            agg_frame.kmeans()
-            agg_frame.perform_pca_and_cluster()
+            agg_frame = creat_agg_frame(sheet_path,bank_data)
             agg_frame.output_file(sheet_path)
 
-    if callback:
-        data_treemap, display_data = load_main_dashboard_data(agg_frame)
-        callback(data_treemap,display_data)
-        return agg_frame
-    else:
-        raise ValueError("Callback function not provided")
+    return agg_frame
+    # if callback:
+    #     data_treemap, display_data = load_main_dashboard_data(agg_frame)
+    #     callback(data_treemap,display_data)
+    #     return agg_frame
+    # else:
+    #     raise ValueError("Callback function not provided")
 
 # Function to create Seaborn chart
-def create_grouped_barplot(data, banks, marketvalue, year, title):
-    fig, ax = plt.subplots()
-    sns.barplot(data=data, x=banks, y=marketvalue,hue=year, ax=ax)
+# DEPRECATED: USE change_grouped_barplot INSTEAD
+# def create_grouped_barplot(data, banks, marketvalue, year, title):
+#     fig, ax = plt.subplots()
+#     sns.barplot(data=data, x=banks, y=marketvalue,hue=year, ax=ax)
+#     ax.set_title(title)
+#     ax.legend()
+#     return fig
+
+# Function to change Seaborn chart,
+# bank_canvas.draw() MUST be called after this function
+def change_grouped_barplot(canvas,ax,data, banks, marketvalue, year, title):
+    ax.clear()
+    ax = sns.barplot(data=data, x=banks, y=marketvalue,hue=year, ax=ax)
     ax.set_title(title)
     ax.legend()
-    return fig
+    canvas.draw()
 
 def create_treemap(data):
     fig, ax = plt.subplots()
@@ -172,14 +184,26 @@ def show_frame(frame):
     frame.tkraise()
 
 # Function to handle click events in treemap
-def on_click(event):
+def on_click(event,bank_canvas=None,bank_market_chart_ax=None,agg_frame=None):
     if event:
         # event.annotation.remove()
         pass
     if event.artist:
-        print(f"Clicked on: {event.artist.patches[event.index].name}")
-        #TODO: IMPLEMENT CHANGING DATA
-        # show_frame(selected_bank_frames[event.artist.patches[event.index].name])
+        label = event.artist.patches[event.index].name
+        #get bank cluster value for this label
+        bank_cluster = agg_frame.dataframe.loc[(agg_frame.dataframe["Banka"] == label, "cluster")].values[0]
+        df = agg_frame.dataframe.loc[(agg_frame.dataframe['cluster'] == bank_cluster)]
+
+        #create dataframe to be used for data
+        print(f"Clicked on: {label}")
+        show_frame(bank_frame)
+
+        if bank_canvas and bank_market_chart_ax and agg_frame:
+            change_grouped_barplot(bank_canvas,bank_market_chart_ax,df, "Ticker","UKUPNO AKTIVA","Godina", f"Grafikon {int(bank_cluster)}. klastera")
+        else:
+            print("Error: bank_canvas, bank_market_chart_ax or agg_frame not provided")
+            return
+
 
 # callback function to change color when hovering in treemap
 def on_hover(event):
@@ -188,7 +212,7 @@ def on_hover(event):
             patch.set_alpha(0.6)
         event.artist.patches[event.index].set_alpha(0.5)
 
-def show_market_chart(data = None, master = None,on_click_callback=lambda event: on_click(event),on_hover_callback=lambda event: on_hover(event)):
+def show_market_chart(data = None, master = None,on_click_callback=lambda event, bank_canvas,bank_market_chart_ax,agg_frame, : on_click(event,bank_canvas,bank_market_chart_ax,agg_frame),on_hover_callback=lambda event: on_hover(event)):
     # Add content to 'chart' frame
     market_chart = create_treemap(data)
     canvas = FigureCanvasTkAgg(market_chart, master=master)
@@ -231,7 +255,7 @@ def show_market_data(data = None,master = None):
     for j in range(2):
         master.grid_columnconfigure(j, weight=1,uniform='Silent_Creme')
 
-def show_main_dashboard(master = None, treemap_data = None, market_data = None):
+def show_main_dashboard(master = None, treemap_data = None, market_data = None, bank_canvas=None,bank_market_chart_ax=None,agg_frame=None):
     # Add Title to 'entire market' frame
     entire_market_title = ctk.CTkLabel(master, text="Celo tržište", font=("Arial", 24))
     entire_market_title.grid(row=0, column=0, columnspan=2, pady=10, sticky="n")
@@ -249,7 +273,7 @@ def show_main_dashboard(master = None, treemap_data = None, market_data = None):
     master.grid_columnconfigure(1, weight=9,uniform='Silent_Creme')
 
     # Show the treemap
-    show_market_chart(data=treemap_data, master=main_chart_frame)
+    show_market_chart(data=treemap_data, master=main_chart_frame,on_click_callback=lambda event: on_click(event,bank_canvas,bank_market_chart_ax,agg_frame))
 
     # Show the numerical data
     show_market_data(data=market_data, master=main_data_frame)
@@ -257,50 +281,159 @@ def show_main_dashboard(master = None, treemap_data = None, market_data = None):
     show_frame(master)
     
 
-# function to change the data in the chart based on radio button click
-def on_radio_click(event, value, label):
-    global bank_market_charts
-    global bank_full_dataframes
-    global bank_clusters
-    global bank_canvases
-    global bank_chart_frames
-    if label in bank_canvases and bank_canvases[label].get_tk_widget().winfo_exists():
-        bank_canvases[label].get_tk_widget().pack_forget()
-    # on radio click, do different things based on value
-    if (value==0):
-        #change the data in the chart to show UKUPNO AKTIVA
-        print("change the data in the chart to show UKUPNO AKTIVA")
-        bank_market_charts[label].clear()
-        bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","UKUPNO AKTIVA","Godina", f"Grafikon {int(bank_clusters[label])}. klastera")
-    elif (value==1):
-        #change the data in the chart to show NETO KAMATNA MARŽA
-        print("change the data in the chart to show NETO KAMATNA MARŽA")
-        bank_market_charts[label].clear()
-        bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Neto kamatna marža","Godina", f"Grafikon {int(bank_clusters[label])}. klastera")
-    elif (value==2):
-        #change the data in the chart to show POVRAT NA SOPSTVENI KAPITAL
-        print("change the data in the chart to show POVRAT NA SOPSTVENI KAPITAL")
-        bank_market_charts[label].clear()
-        bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Povrat na sopstveni kapital","Godina", f"Grafikon {int(bank_clusters[label])}. klastera")
-    elif (value==3):
-        #change the data in the chart to show Koeficijent likvidnosti
-        print("change the data in the chart to show Koeficijent likvidnosti")
-        bank_market_charts[label].clear()
-        bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Koeficijent likvidnosti","Godina", f"Grafikon {int(bank_clusters[label])}. klastera")
-    elif (value==4):
-        #change the data in the chart to show Stopa obezvređenja
-        print("change the data in the chart to show Stopa obezvređenja")
-        bank_market_charts[label].clear()
-        bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Stopa obezvređenja","Godina", f"Grafikon {int(bank_clusters[label])}. klastera")
-    elif (value==5):
-        #change the data in the chart to show Odnos kredita prema depozitima
-        print("change the data in the chart to show Odnos kredita prema depozitima")
-        bank_market_charts[label].clear()
-        bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Odnos kredita prema depozitima","Godina", f"Grafikon {int(bank_clusters[label])}. klastera")
-    bank_canvases[label] = FigureCanvasTkAgg(bank_market_charts[label], master=bank_chart_frames[label])
-    bank_canvases[label].draw()
-    bank_canvases[label].get_tk_widget().pack(side="top", fill="both", expand=True)
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#NOTE: SHOULDN'T BE CREATING DICTIONARIES, INSTEAD INDEXING DATAFRAMES DIRECTLY
+# def create_full_dataframes(label,agg_frame):
+#     #docstring template
+#     """
+#     Function to create full dataframes for each bank that contains all the data for that bank
+#     """
+#     # get cluster of the bank by reading the dataframe in 2023
+#     bank_clusters[label] = agg_frame.dataframe.loc[
+#         (agg_frame.dataframe['Godina'] == 2023) & (agg_frame.dataframe['Banka'] == label), 'cluster'
+#     ].values[0]
 
+#     bank_clustered_dataframes[label] = agg_frame.dataframe.loc[
+#         agg_frame.dataframe['cluster'] == bank_clusters[label]
+#     ].copy()
+#     bank_clustered_dataframes[label].loc[:, 'Ticker'] = bank_clustered_dataframes[label]['Banka'].map(tickers)
+
+#     # create new dataframe from agg_frame containing all banks that are in bank_clustered_dataframes[label]['Banka']
+#     bank_full_dataframes[label] = agg_frame.dataframe[agg_frame.dataframe['Banka'].isin(bank_clustered_dataframes[label]['Banka'])].copy()
+#     bank_full_dataframes[label].loc[:, 'Ticker'] = bank_full_dataframes[label]['Banka'].map(tickers)
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    # #create rank for each bank
+    # agg_frame.dataframe[agg_frame.dataframe['Godina'] == 2023].loc[:, 'rang'] = agg_frame.dataframe[agg_frame.dataframe['Godina'] == 2023]['UKUPNO AKTIVA'].rank(ascending=False)
+    #NOTE: DEPRECATED
+#     bank_dataframes[label] = agg_frame.dataframe[agg_frame.dataframe['Godina'] == 2023].copy()
+#     # rank this bank by UKUPNO AKTIVA
+#     bank_dataframes[label].loc[:, 'rang'] = bank_dataframes[label]['UKUPNO AKTIVA'].rank(ascending=False)
+
+    # BOX_DATA = [bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['rang'].values[0],bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['UKUPNO AKTIVA'].values[0],round(bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['Neto kamatna marža'].values[0],2),round(bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['Povrat na sopstveni kapital'].values[0],2),round(bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['Koeficijent likvidnosti'].values[0],2),round(bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['Stopa obezvređenja'].values[0],2)]
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+# function to change the data in the chart based on radio button click
+# def on_radio_click(event, value, label):
+#     global bank_market_charts
+#     global bank_full_dataframes
+#     global bank_clusters
+#     global bank_canvases
+#     global bank_chart_frames
+#     if label in bank_canvases and bank_canvases[label].get_tk_widget().winfo_exists():
+#         bank_canvases[label].get_tk_widget().pack_forget()
+#     # on radio click, do different things based on value
+#     if (value==0):
+#         #change the data in the chart to show UKUPNO AKTIVA
+#         print("change the data in the chart to show UKUPNO AKTIVA")
+#         bank_market_charts[label].clear()
+#         bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","UKUPNO AKTIVA","Godina", f"Grafikon {int(bank_clusters[label])}. klastera")
+#     elif (value==1):
+#         #change the data in the chart to show NETO KAMATNA MARŽA
+#         print("change the data in the chart to show NETO KAMATNA MARŽA")
+#         bank_market_charts[label].clear()
+#         bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Neto kamatna marža","Godina", f"Grafikon {int(bank_clusters[label])}. klastera")
+#     elif (value==2):
+#         #change the data in the chart to show POVRAT NA SOPSTVENI KAPITAL
+#         print("change the data in the chart to show POVRAT NA SOPSTVENI KAPITAL")
+#         bank_market_charts[label].clear()
+#         bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Povrat na sopstveni kapital","Godina", f"Grafikon {int(bank_clusters[label])}. klastera")
+#     elif (value==3):
+#         #change the data in the chart to show Koeficijent likvidnosti
+#         print("change the data in the chart to show Koeficijent likvidnosti")
+#         bank_market_charts[label].clear()
+#         bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Koeficijent likvidnosti","Godina", f"Grafikon {int(bank_clusters[label])}. klastera")
+#     elif (value==4):
+#         #change the data in the chart to show Stopa obezvređenja
+#         print("change the data in the chart to show Stopa obezvređenja")
+#         bank_market_charts[label].clear()
+#         bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Stopa obezvređenja","Godina", f"Grafikon {int(bank_clusters[label])}. klastera")
+#     elif (value==5):
+#         #change the data in the chart to show Odnos kredita prema depozitima
+#         print("change the data in the chart to show Odnos kredita prema depozitima")
+#         bank_market_charts[label].clear()
+#         bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","Odnos kredita prema depozitima","Godina", f"Grafikon {int(bank_clusters[label])}. klastera")
+#     bank_canvases[label] = FigureCanvasTkAgg(bank_market_charts[label], master=bank_chart_frames[label])
+#     bank_canvases[label].draw()
+#     bank_canvases[label].get_tk_widget().pack(side="top", fill="both", expand=True)
+
+def create_bank_frame(master,agg_frame=None):
+    bank_frame = ctk.CTkFrame(master)
+    bank_frame.grid(row=0, column=0, sticky="nsew")
+
+    # Add Title to bank frame
+    bank_title = ctk.CTkLabel(bank_frame, text="<Banka-Placeholder>", font=("Arial", 24))
+    bank_title.grid(row=0, column=0, columnspan=3, pady=10, sticky="n")
+
+    # Add a button to row 0
+    bank_button = ctk.CTkButton(bank_frame, text="Return to dashboard", command=lambda: show_frame(entire_market_frame))
+    bank_button.grid(row=0, column=2, padx=10, pady=10, sticky="e")
+
+    # Create sub-frames for chart and numerical data
+    bank_choice_frame = ctk.CTkFrame(bank_frame)
+    bank_chart_frame = ctk.CTkFrame(bank_frame)
+    bank_data_frame = ctk.CTkFrame(bank_frame)
+
+    bank_choice_frame.grid(row=1, column=0, sticky="nsew")
+    #vertically center bank_choice_frame
+    bank_choice_frame.grid_rowconfigure(0, weight=1)
+    bank_chart_frame.grid(row=1, column=1, sticky="nsew")
+    bank_data_frame.grid(row=1, column=2, sticky="nsew")
+
+    # Configure the bank_frame to expand and fill the available space
+    bank_frame.grid_rowconfigure(1, weight=1)
+    bank_frame.grid_columnconfigure(0, weight=1,uniform='Silent_Creme')
+    bank_frame.grid_columnconfigure(1, weight=9,uniform='Silent_Creme')
+    bank_frame.grid_columnconfigure(2, weight=9,uniform='Silent_Creme')
+    #NOTE: CONTINUE HERE WITH THE REST OF THE CODE UNDER...
+    # create base figure for bank_canvas
+    bank_frame.bank_market_chart_fig, bank_frame.bank_market_chart_ax = plt.subplots()
+    bank_frame.bank_canvas = FigureCanvasTkAgg(bank_frame.bank_market_chart_fig,master=bank_chart_frame)
+    bank_frame.bank_canvas.get_tk_widget().pack(side=ctk.TOP, fill=ctk.BOTH, expand=True)
+    
+    BOX_LABELS = ['RANG PO AKTIVI','UKUPNA AKTIVA', 'NETO KAMATNA MARŽA','POVRAĆAJ NA SOPSTVENI KAPITAL', 'KOEFICIJENT LIKVIDNOSTI', 'STOPA OBEZVREĐENJA']
+
+
+    # Add 6 boxes with labels and data to 'data' frame
+    for i in range(3):
+        for j in range(2):
+            bank_box_frame = ctk.CTkFrame(bank_data_frame)
+            bank_box_frame.grid(row=i, column=j, padx=10, pady=10, sticky="nsew")
+            
+            box_text = ctk.CTkLabel(bank_box_frame, text=BOX_LABELS[i*2 + j], font=("Arial", 24))
+            box_text.pack(pady=5)
+            
+            data_content = ctk.CTkLabel(bank_box_frame, text="placeholder_text", font=("Arial", 30))
+            #NOTE: USE THIS FOR CHANGE_BANK_DATA
+            # data_content = ctk.CTkLabel(bank_box_frame, text=str(BOX_DATA[i*2 + j]) + ('%' if (i*2 + j) >=2 else ''), font=("Arial", 30))
+            data_content.pack(pady=5)
+
+    # Configure the bank_data_frames[label] to expand and fill the available space
+    for i in range(3):
+        bank_data_frame.grid_rowconfigure(i, weight=1,uniform='Silent_Creme')
+    for j in range(2):
+        bank_data_frame.grid_columnconfigure(j, weight=1,uniform='Silent_Creme')
+
+    # Add 6 vertical radio buttons to 'bank_choice' frame that are connected to each other
+    bank_choice = ctk.IntVar()
+    for i in range(6):
+        bank_choice_button = ctk.CTkRadioButton(bank_choice_frame, text=f"", variable=bank_choice, value=i)
+        bank_choice_button.grid(row=i, column=0, padx=10, pady=10, sticky="w")
+        #NOTE: USE THIS FOR CHANGE_BANK_DATA
+        #add on_click event to radio buttons
+        # bank_choice_button.bind("<Button-1>", lambda event, value=i, label=label: on_radio_click(event, value, label))
+
+    # center all the radio buttons vertically
+    for i in range(6):
+        bank_choice_frame.grid_rowconfigure(i, weight=1,uniform='Silent_Creme')
+
+    return bank_frame
 
 # Initialize seaborn
 sns.set_theme(style="whitegrid")
@@ -324,137 +457,38 @@ container.grid_columnconfigure(0, weight=1)
 # Create frames for each page
 loading_frame = ctk.CTkFrame(container)
 entire_market_frame = ctk.CTkFrame(container)
-selected_bank_frame = ctk.CTkFrame(container)
-
-####DEPRECATED
-# for label in data_treemap['Banka']:
-    # selected_bank_frames[label] = ctk.CTkFrame(container)
+bank_frame = create_bank_frame(container)
 
 loading_frame.grid(row=0, column=0, sticky="nsew")
 entire_market_frame.grid(row=0, column=0, sticky="nsew")
-selected_bank_frame.grid(row=0, column=0, sticky="nsew")
-
-
-####################################################
-################ SELECTED BANK FRAME ###############
-####################################################
-
-# # Add Title to bank frames
-# bank_titles = {}
-# for label,bank_frame in selected_bank_frames.items():
-#     bank_titles[label] = ctk.CTkLabel(bank_frame, text=label+' bank', font=("Arial", 24))
-#     bank_titles[label].grid(row=0, column=0, columnspan=3, pady=10, sticky="n")
-
-#     # Add a button to row 0
-#     bank_button = ctk.CTkButton(bank_frame, text="Return to dashboard", command=lambda: show_frame(entire_market_frame))
-#     bank_button.grid(row=0, column=2, padx=10, pady=10, sticky="e")
-
-# # Create sub-frames for chart and numerical data
-# bank_choice_frames = {}
-# bank_chart_frames = {}
-# bank_data_frames = {}
-# bank_box_frames = {}
-# # make bank_market_charts global
-# bank_market_charts = {}
-# bank_choices = {}
-# bank_choice_buttons= {}
-# bank_clustered_dataframes = {}
-# bank_clusters = {}
-# bank_dataframes = {}
-# bank_full_dataframes = {}
-# bank_canvases = {}
-
-# for label,bank_frame in selected_bank_frames.items():
-#     bank_choice_frames[label] = ctk.CTkFrame(bank_frame)
-#     bank_chart_frames[label] = ctk.CTkFrame(bank_frame)
-#     bank_data_frames[label] = ctk.CTkFrame(bank_frame)
-
-#     bank_choice_frames[label].grid(row=1, column=0, sticky="nsew")
-#     #vertically center bank_choice_frames
-#     bank_choice_frames[label].grid_rowconfigure(0, weight=1)
-#     bank_chart_frames[label].grid(row=1, column=1, sticky="nsew")
-#     bank_data_frames[label].grid(row=1, column=2, sticky="nsew")
-
-#     # Configure the bank_frame to expand and fill the available space
-#     bank_frame.grid_rowconfigure(1, weight=1)
-#     bank_frame.grid_columnconfigure(0, weight=1,uniform='Silent_Creme')
-#     bank_frame.grid_columnconfigure(1, weight=9,uniform='Silent_Creme')
-#     bank_frame.grid_columnconfigure(2, weight=9,uniform='Silent_Creme')
-
-#     # get cluster of the bank by reading the dataframe in 2023
-#     bank_clusters[label] = agg_frame.dataframe.loc[
-#         (agg_frame.dataframe['Godina'] == 2023) & (agg_frame.dataframe['Banka'] == label), 'cluster'
-#     ].values[0]
-
-#     bank_clustered_dataframes[label] = agg_frame.dataframe.loc[
-#         agg_frame.dataframe['cluster'] == bank_clusters[label]
-#     ].copy()
-#     bank_clustered_dataframes[label].loc[:, 'Ticker'] = bank_clustered_dataframes[label]['Banka'].map(tickers)
-
-#     # create new dataframe from agg_frame containing all banks that are in bank_clustered_dataframes[label]['Banka']
-#     bank_full_dataframes[label] = agg_frame.dataframe[agg_frame.dataframe['Banka'].isin(bank_clustered_dataframes[label]['Banka'])].copy()
-#     bank_full_dataframes[label].loc[:, 'Ticker'] = bank_full_dataframes[label]['Banka'].map(tickers)
-
-#     # NOTE: comment this out when debugging for better performance
-#     # Add content to 'chart' frame
-#     bank_market_charts[label] = create_grouped_barplot(bank_full_dataframes[label], "Ticker","UKUPNO AKTIVA","Godina", f"Grafikon {int(bank_clusters[label])}. klastera")
-#     bank_canvases[label] = FigureCanvasTkAgg(bank_market_charts[label], master=bank_chart_frames[label])
-#     bank_canvases[label].draw()
-#     bank_canvases[label].get_tk_widget().pack(side="top",fill="both", expand=True)
-
-
-#     bank_dataframes[label] = agg_frame.dataframe[agg_frame.dataframe['Godina'] == 2023].copy()
-#     # rank this bank by UKUPNO AKTIVA
-#     bank_dataframes[label].loc[:, 'rang'] = bank_dataframes[label]['UKUPNO AKTIVA'].rank(ascending=False)
-
-#     BOX_LABELS = ['RANG PO AKTIVI','UKUPNA AKTIVA', 'NETO KAMATNA MARŽA','POVRAĆAJ NA SOPSTVENI KAPITAL', 'KOEFICIJENT LIKVIDNOSTI', 'STOPA OBEZVREĐENJA']
-#     BOX_DATA = [bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['rang'].values[0],bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['UKUPNO AKTIVA'].values[0],round(bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['Neto kamatna marža'].values[0],2),round(bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['Povrat na sopstveni kapital'].values[0],2),round(bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['Koeficijent likvidnosti'].values[0],2),round(bank_dataframes[label][bank_dataframes[label]['Banka'] == label]['Stopa obezvređenja'].values[0],2)]
-
-#     # Add 6 boxes with labels and data to 'data' frame
-#     for i in range(3):
-#         for j in range(2):
-#             bank_box_frames[label] = ctk.CTkFrame(bank_data_frames[label])
-#             bank_box_frames[label].grid(row=i, column=j, padx=10, pady=10, sticky="nsew")
-            
-#             box_text = ctk.CTkLabel(bank_box_frames[label], text=BOX_LABELS[i*2 + j], font=("Arial", 24))
-#             box_text.pack(pady=5)
-            
-#             data_content = ctk.CTkLabel(bank_box_frames[label], text=str(BOX_DATA[i*2 + j]) + ('%' if (i*2 + j) >=2 else ''), font=("Arial", 30))
-#             data_content.pack(pady=5)
-
-#     # Configure the bank_data_frames[label] to expand and fill the available space
-#     for i in range(3):
-#         bank_data_frames[label].grid_rowconfigure(i, weight=1,uniform='Silent_Creme')
-#     for j in range(2):
-#         bank_data_frames[label].grid_columnconfigure(j, weight=1,uniform='Silent_Creme')
     
-#     # Add 6 vertical radio buttons to 'bank_choice' frame that are connected to each other
-#     bank_choices[label] = ctk.IntVar()
-#     for i in range(6):
-#         bank_choice_buttons[label] = ctk.CTkRadioButton(bank_choice_frames[label], text=f"", variable=bank_choices[label], value=i)
-#         bank_choice_buttons[label].grid(row=i, column=0, padx=10, pady=10, sticky="w")
-#         #add on_click event to radio buttons
-#         bank_choice_buttons[label].bind("<Button-1>", lambda event, value=i, label=label: on_radio_click(event, value, label))
-    
-#     # center all the radio buttons vertically
-#     for i in range(6):
-#         bank_choice_frames[label].grid_rowconfigure(i, weight=1,uniform='Silent_Creme')
 
+# NOTE:DEPRECATED
 # Schedule load_sheets to run after the main loop starts
-show_loading_frame(master=loading_frame)
+# show_loading_frame(master=loading_frame)
 
-load_sheets(
+agg_frame = load_sheets(
     sheets_folder,
-    callback=lambda data_treemap, display_data: show_main_dashboard(
-        master=entire_market_frame,
-        treemap_data=data_treemap,
-        market_data=display_data
-    ),
     save=False,
     sheet_path='dataframe.xlsx',
     download=False,
     load=True
 )
+
+# # #NOTE: PUT THIS OUTSIDE OF  THE CALLBACK
+# bank_clustered_dataframe = agg_frame.dataframe.loc[agg_frame.dataframe['cluster'] == bank_cluster].copy()
+
+data_treemap, display_data = load_main_dashboard_data(agg_frame)
+show_main_dashboard(
+        master=entire_market_frame,
+        treemap_data=data_treemap,
+        market_data=display_data,
+        bank_canvas=bank_frame.bank_canvas,
+        bank_market_chart_ax=bank_frame.bank_market_chart_ax,
+        agg_frame=agg_frame
+    )
+
+#bank_frame.canvas...
 
 #NOTE:
 # try using threads to load the data and be able to update the app in parallel
