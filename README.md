@@ -1,20 +1,20 @@
-# Banke-RS - Tool for analyzing the banking market
+# Banke-RS - Tool for Analyzing the Banking Market
 
-A tool for analyzing the banking market and individual bank performance developed as part of the Computational Finance seminar in Petnica in 2024.
-People involved: [Jovan Ivković](https://github.com/jovanivko), Đorđe Simić and [Marko Milenković](https://github.com/MarkoMile).
+A tool for analyzing the banking market and the performance of individual banks, developed as part of the Computational Finance seminar at Petnica Science Center in 2024.
 
- * See [Usage](#usage) for guidance on how to use this repository.
- * See [Example](#example) for an example of the program.
+People involved: [Jovan Ivković](https://github.com/jovanivko), Đorđe Simić, [Marko Milenković](https://github.com/MarkoMile), and mentor Jasna Atanasijević.
+
+* See [Usage](#usage) for instructions on how to use this repository.
+* See [Example](#example) for a demonstration of the program.
 
 # Capabilities
 
-The program scrapes data from the NBS (National Bank of Serbia) website for individual bank balance sheets and income statements for the years 2022 and 2023.
-This data is parsed, analyzed, and visualized in the program. Banks are clustered using k-means and PCA.
+The program gathers data from the NBS (National Bank of Serbia) website on the balance sheets and income statements of individual banks for the years 2022 and 2023. This data is analyzed, processed, and visualized within the program. Banks are clustered using the k-means and PCA methods.
 
-Data shown for the whole market: 
-* TOTAL ASSETS 2023, ASSET GROWTH, TOTAL DEPOSIT 2023, DEPOSIT GROWTH, TOTAL LOAN 2023, LOAN GROWTH
+Data shown for the entire market:
+* TOTAL ASSETS 2023, ASSET GROWTH, TOTAL DEPOSITS 2023, DEPOSIT GROWTH, TOTAL LOANS 2023, LOAN GROWTH
 
-Data shown for individual banks: 
+Data shown for individual banks:
 * RANK BY ASSETS, TOTAL ASSETS, NET INTEREST MARGIN, RETURN ON EQUITY, LIQUIDITY RATIO, IMPAIRMENT RATE
 
 # Example
@@ -25,13 +25,17 @@ Data shown for individual banks:
 
 # Usage
 
-Prerequisites:
- * Install the packages in [requirements.txt](requirements.txt) with ```pip install -r ./requirements.txt```.
+### Prerequisites
+Before running the program, make sure you have the following:
 
-To get started with the program:
+* Python 3.x
+* Install the required packages from `requirements.txt`
 
- * Run [gui.py](gui.py) with ```python ./gui.py```.
+To install the packages, run the following command:  
+```pip install -r requirements.txt```
 
-Note: Running the program for the first time might take a while because it must download and analyze data.
+### Running the Program
+After installing the packages, you can run the program with the following command:  
+```python ./gui.py```.
 
-
+Note: The first time you run the program, it may take some time to download and process the data.
