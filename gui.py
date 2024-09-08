@@ -260,8 +260,13 @@ def show_market_chart(data = None, master = None,on_click_callback=lambda event,
 
     return canvas
 
-def show_market_data(data = None,master = None):
+def update_wraplength(event,box_frame,label):
+    # Get the width of the parent frame
+    frame_width = box_frame.winfo_width()
+    # Update the wraplength of the label
+    label.configure(wraplength=frame_width)
 
+def show_market_data(data = None,master = None):
     BOX_LABELS = ['UKUPNO AKTIVA 2023', 'RAST AKTIVE', 'UKUPAN DEPOZIT 2023', 'RAST DEPOZITA', 'UKUPAN KREDIT 2023', 'RAST KREDITA']
     BOX_DATA = [data.at[0,'UKUPNO_AKTIVA_2023'], data.at[0,'RAST_AKTIVE'], data.at[0,'UKUPAN_DEPOZIT_2023'], data.at[0,'RAST_DEPOZITA'], data.at[0,'UKUPAN_KREDIT_2023'], data.at[0,'RAST_KREDITA']]
 
@@ -271,8 +276,12 @@ def show_market_data(data = None,master = None):
         box_frame = ctk.CTkFrame(master)
         box_frame.grid(row=row, column=col, padx=10, pady=10, sticky="nsew")
         
-        label = ctk.CTkLabel(box_frame, text=label_text, font=("Arial", 24))
+        app.update_idletasks() # update the frame to get the width
+
+        label = ctk.CTkLabel(box_frame,wraplength=box_frame.winfo_width(), text=label_text, font=("Arial", 24))
         label.pack(pady=5)
+        
+        box_frame.bind("<Configure>", lambda event:update_wraplength(event,box_frame,label))
         
         data_content = ctk.CTkLabel(box_frame, text=f"{data_value}{'%' if i % 2 else ''}", font=("Arial", 30))
         data_content.pack(pady=5)
@@ -351,8 +360,12 @@ def create_bank_frame(master,data=None):
             bank_frame.bank_box_frames[i*2+j] = ctk.CTkFrame(bank_data_frame)
             bank_frame.bank_box_frames[i*2+j].grid(row=i, column=j, padx=10, pady=10, sticky="nsew")
             
-            bank_frame.bank_box_frames[i*2+j].box_text = ctk.CTkLabel(bank_frame.bank_box_frames[i*2+j], text=BOX_LABELS[i*2 + j], font=("Arial", 24))
+            app.update_idletasks() # update the frame to get the width
+            
+            bank_frame.bank_box_frames[i*2+j].box_text = ctk.CTkLabel(bank_frame.bank_box_frames[i*2+j],wraplength=bank_frame.bank_box_frames[i*2+j].winfo_width(), text=BOX_LABELS[i*2 + j], font=("Arial", 24))
             bank_frame.bank_box_frames[i*2+j].box_text.pack(pady=5)
+
+            bank_frame.bank_box_frames[i*2+j].bind("<Configure>", lambda event:update_wraplength(event,bank_frame.bank_box_frames[i*2+j],bank_frame.bank_box_frames[i*2+j].box_text))
             
             bank_frame.bank_box_frames[i*2+j].data_content = ctk.CTkLabel(bank_frame.bank_box_frames[i*2+j], text="placeholder_text", font=("Arial", 30))
             bank_frame.bank_box_frames[i*2+j].data_content.pack(pady=5)
