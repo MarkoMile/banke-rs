@@ -26,11 +26,11 @@ Data shown for individual banks:
 # Usage
 
 Prerequisites:
- * Install the packages in [requirements.txt](requirements.txt) with 'pip install -r ./requirements.txt'.
+ * Install the packages in [requirements.txt](requirements.txt) with ```pip install -r ./requirements.txt```.
 
 To get started with the program:
 
- * Run [gui.py](gui.py) with 'python ./gui.py'.
+ * Run [gui.py](gui.py) with ```python ./gui.py```.
 
 Note: Running the program for the first time might take a while because it must download and analyze data.
 
