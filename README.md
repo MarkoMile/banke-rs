@@ -1,6 +1,7 @@
 # Banke-RS - Tool for analyzing the banking market
 
 A tool for analyzing the banking market and individual bank performance developed as part of the Computational Finance seminar in Petnica in 2024.
+People involved: [Jovan Ivković](https://github.com/jovanivko), Đorđe Simić and [Marko Milenković](https://github.com/MarkoMile).
 
  * See [Usage](#usage) for guidance on how to use this repository.
  * See [Example](#example) for an example of the program.
