@@ -23,7 +23,7 @@ Podaci prikazani za pojedinačne banke:
 <img src="media/banke-rs-example-hq.gif" alt="banke-rs-example">
 </p>
 
-# Korišćenje
+# Upotreba
 
 ### Preduslovi
 Pre nego što pokrenete program, uverite se da imate sledeće:
